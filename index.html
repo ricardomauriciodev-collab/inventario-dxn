@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventario DXN</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+  body {
+    background: #f5f5f5;
+  }
+</style>
+
+</head>
+
+<body class="font-sans">
+
+<!-- HEADER -->
+<header class="bg-red-600 text-white p-4 text-center text-2xl font-bold shadow">
+  Inventario DXN
+</header>
+
+<div class="p-4 max-w-6xl mx-auto">
+
+<!-- PRODUCTOS -->
+<h2 class="text-xl font-bold mb-4">Productos</h2>
+
+<div id="productos" class="grid sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8"></div>
+
+<!-- VENTAS -->
+<div class="bg-white p-4 rounded-xl shadow mb-6">
+<h2 class="text-xl font-bold mb-3 text-red-600">Registrar Venta</h2>
+
+<input id="cliente" placeholder="Cliente" class="border p-2 w-full mb-2 rounded">
+<input id="codigo" placeholder="Código" class="border p-2 w-full mb-4 rounded">
+
+<div id="itemsVenta"></div>
+
+<button onclick="agregarItemVenta()" class="bg-red-500 text-white px-3 py-1 rounded mb-3">
++ Agregar Producto
+</button>
+
+<button onclick="guardarVenta()" class="bg-red-600 text-white w-full py-2 rounded font-bold">
+Registrar Venta
+</button>
+</div>
+
+<!-- REPOSICION -->
+<div class="bg-white p-4 rounded-xl shadow">
+<h2 class="text-xl font-bold mb-3 text-red-600">Reposición</h2>
+
+<div id="itemsRepo"></div>
+
+<button onclick="agregarItemRepo()" class="bg-red-500 text-white px-3 py-1 rounded mb-3">
++ Agregar Producto
+</button>
+
+<button onclick="guardarRepo()" class="bg-red-600 text-white w-full py-2 rounded font-bold">
+Reponer Stock
+</button>
+</div>
+
+</div>
+
+<script>
+const API = "https://script.google.com/macros/s/AKfycbzBSR8uLq2BqOf_ondrCr8Qr5plGeAz08uBKCGh9Y4LuUGv78aihIbqrezy0GnJPIg/exec";
+
+let productos = [];
+
+// CARGAR PRODUCTOS
+async function cargar() {
+  const res = await fetch(API + "?action=productos");
+  productos = await res.json();
+  renderProductos();
+}
+
+// MOSTRAR PRODUCTOS
+function renderProductos() {
+  const cont = document.getElementById("productos");
+  cont.innerHTML = "";
+
+  productos.forEach(p => {
+    cont.innerHTML += `
+      <div class="bg-white rounded-xl shadow p-4 text-center hover:scale-105 transition">
+        <img src="img/${p.imagen}" 
+             onerror="this.src='img/default.png'" 
+             class="h-32 mx-auto mb-2 object-contain">
+        <h3 class="font-bold text-lg">${p.nombre}</h3>
+        <p class="text-red-600 text-xl font-bold">Stock: ${p.stock}</p>
+      </div>
+    `;
+  });
+}
+
+// -------- VENTAS --------
+function agregarItemVenta() {
+  const div = document.getElementById("itemsVenta");
+
+  div.innerHTML += `
+    <div class="flex gap-2 mb-2">
+      <select class="producto border p-2 rounded w-full">
+        ${productos.map(p => `<option value="${p.id}">${p.nombre}</option>`).join("")}
+      </select>
+      <input type="number" class="cantidad border p-2 rounded w-24" placeholder="Cant">
+    </div>
+  `;
+}
+
+async function guardarVenta() {
+  const items = [];
+
+  document.querySelectorAll("#itemsVenta div").forEach(row => {
+    items.push({
+      producto_id: Number(row.querySelector(".producto").value),
+      cantidad: Number(row.querySelector(".cantidad").value)
+    });
+  });
+
+  const body = {
+    cliente: document.getElementById("cliente").value,
+    codigo: document.getElementById("codigo").value,
+    items
+  };
+
+  const fd = new FormData();
+  fd.append("action","venta");
+  fd.append("data", JSON.stringify(body));
+
+  await fetch(API, { method:"POST", body:fd });
+
+  alert("Venta registrada");
+  location.reload();
+}
+
+// -------- REPOSICION --------
+function agregarItemRepo() {
+  const div = document.getElementById("itemsRepo");
+
+  div.innerHTML += `
+    <div class="flex gap-2 mb-2">
+      <select class="producto border p-2 rounded w-full">
+        ${productos.map(p => `<option value="${p.id}">${p.nombre}</option>`).join("")}
+      </select>
+      <input type="number" class="cantidad border p-2 rounded w-24" placeholder="Cant">
+    </div>
+  `;
+}
+
+async function guardarRepo() {
+  const items = [];
+
+  document.querySelectorAll("#itemsRepo div").forEach(row => {
+    items.push({
+      producto_id: Number(row.querySelector(".producto").value),
+      cantidad: Number(row.querySelector(".cantidad").value)
+    });
+  });
+
+  const fd = new FormData();
+  fd.append("action","reposicion");
+  fd.append("data", JSON.stringify({items}));
+
+  await fetch(API, { method:"POST", body:fd });
+
+  alert("Stock actualizado");
+  location.reload();
+}
+
+cargar();
+</script>
+
+</body>
+</html>
